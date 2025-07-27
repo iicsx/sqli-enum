@@ -30,3 +30,8 @@ def column_error():
     print(r" │  Did you mistmatch the column number?")
     print(r" │  Try omitting it to run in brute-force mode")
     print(r" ╰─ This will determine the number of columns automatically at the cost of increased traffic")
+
+
+def brute_force_error():
+    print("\n[x] Could not determine DMBS version")
+    print(" ╰  This URL might not be vulnerable to SQL injection")

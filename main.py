@@ -5,17 +5,16 @@ from time import sleep
 # Local Modules
 from determine import determine_dbms
 from parser import parse_args
-from printer import banner, column_error, usage
+import printer
 
 
 if __name__ == "__main__":
     if "--help" in argv or "-h" in argv:
-        usage()
+        printer.usage()
         exit(1)
 
-    banner()
+    printer.banner()
 
-    print(r"[ ] Processing input...")
     opts = parse_args(argv)
     print(r"[ ] Running version check...")
 
@@ -39,6 +38,9 @@ if __name__ == "__main__":
 
     if version is not None:
         print("\n[*] Got version " + version.name)
+    elif brute_force:
+        printer.brute_force_error()
+        exit(1)
     else:
-        column_error()
+        printer.column_error()
         exit(1)

