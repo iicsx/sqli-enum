@@ -1,4 +1,6 @@
 from sys import argv, exit
+from requests import ConnectionError
+from time import sleep
 
 # Local Modules
 from determine import determine_dbms
@@ -21,11 +23,22 @@ if __name__ == "__main__":
     if brute_force:
         print(r"[!] Columns missing, using brute force mode")
 
-    version = determine_dbms(
-        opts.URL, opts.SUCCESS_STR, opts.ERROR_STR, int(opts.COLUMNS or "0"), brute_force)
+    tries = 0
+    while (True):
+        try:
+            version = determine_dbms(
+                opts.URL, opts.SUCCESS_STR, opts.ERROR_STR, int(opts.COLUMNS or "0"), brute_force)
+            break
+        except ConnectionError:
+            sleep(1)
+            tries += 1
+
+            if tries >= 5:
+                print("\n[x] Could not connect to specified URL")
+                exit(1)
 
     if version is not None:
-        print(r"[*] Got version " + version.name)
+        print("\n[*] Got version " + version.name)
     else:
         column_error()
         exit(1)

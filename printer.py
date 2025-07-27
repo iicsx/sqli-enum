@@ -26,8 +26,7 @@ def error(reason):
 
 
 def column_error():
-    print()
-    print(r"[x] Could not get SQL version")
+    print("\n[x] Could not get SQL version")
     print(r" │  Did you mistmatch the column number?")
     print(r" │  Try omitting it to run in brute-force mode")
     print(r" ╰─ This will determine the number of columns automatically at the cost of increased traffic")
