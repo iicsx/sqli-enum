@@ -69,3 +69,14 @@ if __name__ == "__main__":
         print("[*] Got tables: \n    - " + "\n    - ".join(res))
     else:
         print("[x] Could not get table info")
+        exit(1)
+
+    for table in res:
+        print("\n[ ] Gathering info for " + table)
+        columns = sqlite_enum.enumerate_columns(
+            opts, Poison[opts.QUERY_TYPE].value, table)
+
+        if columns is not None and len(columns) > 0:
+            print("[*] Got columns: \n    - " + "\n    - ".join(columns))
+        else:
+            print("[x] Could not get column info for " + table)
