@@ -2,8 +2,7 @@ from sys import argv, exit
 from requests import ConnectionError
 from time import sleep
 from enum import Enum
-from enumerators import Sqlite_Enumerator
-
+from handler import handler
 
 # Local Modules
 from determine import determine_dbms
@@ -52,6 +51,7 @@ if __name__ == "__main__":
 
     if version is not None:
         print("\n[*] Got version " + version.name)
+        opts.DBMS_TYPE = version
 
         if brute_force:
             print("[*] Determined column size: ", opts.COLUMNS)
@@ -63,20 +63,4 @@ if __name__ == "__main__":
         printer.column_error()
         exit(1)
 
-    sqlite_enum = Sqlite_Enumerator()
-    res = sqlite_enum.enumerate_table(opts, Poison[opts.QUERY_TYPE].value)
-    if res is not None and len(res) > 0:
-        print("[*] Got tables: \n    - " + "\n    - ".join(res))
-    else:
-        print("[x] Could not get table info")
-        exit(1)
-
-    for table in res:
-        print("\n[ ] Gathering info for " + table)
-        columns = sqlite_enum.enumerate_columns(
-            opts, Poison[opts.QUERY_TYPE].value, table)
-
-        if columns is not None and len(columns) > 0:
-            print("[*] Got columns: \n    - " + "\n    - ".join(columns))
-        else:
-            print("[x] Could not get column info for " + table)
+    handler(opts)
