@@ -3,6 +3,8 @@ from requests import ConnectionError
 from time import sleep
 from enum import Enum
 from handler import handler
+from colored_printer import Color, ColoredPrinter as CP
+
 
 # Local Modules
 from determine import determine_dbms
@@ -27,7 +29,7 @@ if __name__ == "__main__":
 
     brute_force = opts.COLUMNS is None
     if brute_force:
-        print(r"[!] Columns missing, using brute force mode")
+        CP.print(r"[!] Columns missing, using brute force mode", Color.YELLOW)
 
     tries = 0
     while (True):
