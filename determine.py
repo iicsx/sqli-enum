@@ -1,5 +1,5 @@
 from enum import Enum
-from requests import request
+from http_utils import request_handler
 
 
 class State(Enum):
@@ -43,7 +43,8 @@ def determine_dbms(opts, poison, columns=1, brute_force=False):
         poison_str = poison + version_string.value + nulls + "; -- "
 
         target = opts.URL.replace("FUZZ", poison_str)
-        result = request("get", target).text
+        result = request_handler(
+            opts.METHOD, target, opts.DATA, poison_str).text
 
         if opts.SUCCESS_STR in result and opts.ERROR_STR in result:
             sql_version = DBMS_Type.AMBIGUOUS
@@ -62,7 +63,8 @@ def determine_dbms(opts, poison, columns=1, brute_force=False):
                 poison_str = poison + possible_cast + nulls + ";--"
 
                 target = opts.URL.replace("FUZZ", poison_str)
-                result = request("get", target).text
+                result = request_handler(opts.METHOD, target,
+                                         opts.DATA, poison_str).text
 
                 if opts.SUCCESS_STR in result and opts.ERROR_STR in result:
                     sql_version = DBMS_Type.AMBIGUOUS

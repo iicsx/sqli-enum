@@ -1,8 +1,7 @@
 from sys import argv, exit
 from requests import ConnectionError
 from time import sleep
-from enum import Enum
-from handler import handler
+from handler import handler, Poison
 from colored_printer import Color, ColoredPrinter as CP
 
 
@@ -12,19 +11,15 @@ from parser import parse_args
 import printer
 
 
-class Poison(Enum):
-    NUMERIC = "0 UNION "
-    ALNUM = "' UNION "
-
-
 if __name__ == "__main__":
     if "--help" in argv or "-h" in argv:
         printer.usage()
         exit(1)
 
+    opts = parse_args(argv)
+
     printer.banner()
 
-    opts = parse_args(argv)
     print(r"[ ] Running version check...")
 
     brute_force = opts.COLUMNS is None
