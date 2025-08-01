@@ -42,6 +42,7 @@ def parse_args(args):
         elif descriptor == "--include-system-tables":
             opt.INCLUDE_SYSTEM_TABLES = True
             i += 1
+        # TODO: add option to output to a file
         else:
             raise ValueError(f"Unknown option: {descriptor}")
 

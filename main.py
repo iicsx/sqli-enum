@@ -32,6 +32,7 @@ if __name__ == "__main__":
         CP.print(r"[!] Columns missing, using brute force mode", Color.YELLOW)
 
     tries = 0
+    version = None
     while (True):
         try:
             opts.QUERY_TYPE = Poison.ALNUM.name
@@ -52,7 +53,7 @@ if __name__ == "__main__":
                 exit(1)
 
     if version is not None:
-        print("\n[*] Got version " + version.name)
+        print("[*] Got version " + version.name)
         opts.DBMS_TYPE = version
 
         if brute_force:
